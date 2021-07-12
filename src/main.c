@@ -60,14 +60,17 @@ int main(int argc, char* argv[]) {
 	bool run = true;              // bool for run loop
 	int input;                    // input in editor
 	unsigned int scrollY = 0;     // scroll Y (offset in lines)
-	int col, ln;                  // cursor position
+	int col, ln;                  // printing x and y
+	int curp;                     // 1d cursor position
+	int curX, curyY;              // cursor position
 	int shortfilesize;            // shortened file size (measured in different things)
 	char sfsmeasure[3];           // shortened file size measure
 	char alert[64] = "";          // alert content
 	ui8 alertclock = 0;           //
-	bool inString;                // if in string (when printing)
-	bool inDirective;             // used for C syntax highlighting
-	bool inComment;               // used in syntax highlighting
+	bool inString = 0;            // if in string (when printing)
+	bool inDirective = 0;         // used for C syntax highlighting
+	bool inComment = 0;           // used in syntax highlighting
+	ui8 exittype;                 // used at the end of the program
 	init_pair(1, COLOR_BLACK, COLOR_WHITE);
 	init_pair(2, COLOR_WHITE, COLOR_BLUE);
 	init_pair(3, COLOR_BLACK, COLOR_GREEN);
@@ -96,7 +99,7 @@ int main(int argc, char* argv[]) {
 		}
 		wclear(titlebar);
 		wclear(editor);
-		wprintw(titlebar, "Yeti's Editor b5 || ");
+		wprintw(titlebar, "yedit b5.1 | ");
 		wattron(titlebar, COLOR_PAIR(3));
 		wprintw(titlebar,  "%s", alert);
 		wattroff(titlebar, COLOR_PAIR(3));
@@ -110,7 +113,6 @@ int main(int argc, char* argv[]) {
 						inComment = false;
 					}
 					if ((file[i] == '\"') && !inDirective) inString = !inString;
-					else if ((file[i] == '#') && (col == 0)) inDirective = !inDirective;
 					else if ((file[i] == '/') && (file[i+1] == '/') && !inDirective) inComment = !inComment;
 					if (inString || (file[i] == '"')) {
 						wattron(editor, COLOR_PAIR(5));
@@ -118,16 +120,12 @@ int main(int argc, char* argv[]) {
 					else if ((file[i] >= '0') && (file[i] <= '9')) {
 						wattron(editor, COLOR_PAIR(4));
 					}
-					else if (inDirective) {
-						wattron(editor, COLOR_PAIR(6));
-					}
 					else if (inComment) {
 						wattron(editor, COLOR_PAIR(7));
 					}
 					else {
 						wattroff(editor, COLOR_PAIR(4));
 						wattroff(editor, COLOR_PAIR(5));
-						wattroff(editor, COLOR_PAIR(6));
 						wattroff(editor, COLOR_PAIR(7));
 					}
 					wprintw(editor, "%c", file[i]);
@@ -136,7 +134,7 @@ int main(int argc, char* argv[]) {
 			if (file[i] == 10) {
 				col = 1;
 				++ ln;
-				if (ln >= scrollY) {
+				if (ln >= scrollY + 1) {
 					wprintw(editor, "\n ");
 				}
 			}
@@ -163,9 +161,9 @@ int main(int argc, char* argv[]) {
 		}
 		wprintw(editor, "Mem: %i%s", shortfilesize, sfsmeasure);
 		// time
-		time ( &rawtime );
-		timeinfo = localtime ( &rawtime );
-		wmove(titlebar, 0, scrX - 16);
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
+		wmove(titlebar, 0, scrX - strlen(asctime(timeinfo)) + 1);
 		wattron(titlebar, COLOR_PAIR(2));
 		wprintw(titlebar, "%s", asctime(timeinfo));
 		wattroff(titlebar, COLOR_PAIR(2));
@@ -209,8 +207,9 @@ int main(int argc, char* argv[]) {
 				}
 				break;
 			}
-			case ctrl('C'): {
+			case ctrl('Q'): {
 				run = 0;
+				exittype = 0;
 				break;
 			}
 			case ctrl('S'): {
@@ -229,6 +228,16 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	// end program
+	if (!((exittype == 0) && (strcmp(file, readfile(filename)) == 0))) {
+		char saveq; // save query
+		printf("You have unsaved changes, save? (Y/N) ");
+		scanf("%c", saveq);
+		if ((saveq == 'Y') || (saveq == 'y')) {
+			printf("\nOk, saving..\n");
+			writefile(filename, file);
+			printf("Done\n");
+		}
+	}
 	free(file);
 	endwin();
 	return 0;
