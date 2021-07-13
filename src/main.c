@@ -71,14 +71,18 @@ int main(int argc, char* argv[]) {
 	bool inDirective = 0;         // used for C syntax highlighting
 	bool inComment = 0;           // used in syntax highlighting
 	ui8 exittype;                 // used at the end of the program
+	char character;               // something like the mario from *that* editor
+	int characterX = 0;           // x position of the character
+	ui8 mode;                     // what will be viewed
 	init_pair(1, COLOR_BLACK, COLOR_WHITE);
 	init_pair(2, COLOR_WHITE, COLOR_BLUE);
 	init_pair(3, COLOR_BLACK, COLOR_GREEN);
 	// syntax highlighting
-	init_pair(4, COLOR_CYAN, COLOR_BLUE); // integer / numbers
-	init_pair(5, COLOR_GREEN, COLOR_BLUE); // string
+	init_pair(4, COLOR_CYAN, COLOR_BLUE);    // integer / numbers
+	init_pair(5, COLOR_GREEN, COLOR_BLUE);   // string
 	init_pair(6, COLOR_MAGENTA, COLOR_BLUE); // directive (C)
-	init_pair(7, COLOR_YELLOW, COLOR_BLUE); // comment
+	init_pair(7, COLOR_YELLOW, COLOR_BLUE);  // comment
+	init_pair(8, COLOR_CYAN, COLOR_BLACK);   // character
 	// windows
 	WINDOW* titlebar = newwin(1, scrX, 0, 0);
 	WINDOW* editor   = newwin(scrY - 1, scrX, 1, 0);
@@ -89,6 +93,7 @@ int main(int argc, char* argv[]) {
 	wbkgd(editor, COLOR_PAIR(2));
 	// run loop
 	while (run) {
+		++ characterX;
 		col = 0;
 		ln = 0;
 		if (alertclock != 0) {
@@ -96,6 +101,9 @@ int main(int argc, char* argv[]) {
 		}
 		if (alertclock = 0) {
 			strcpy(alert, "");
+		}
+		if (characterX > scrX) {
+			characterX = 0;
 		}
 		wclear(titlebar);
 		wclear(editor);
@@ -106,6 +114,9 @@ int main(int argc, char* argv[]) {
 		// print on editor
 		wprintw(editor, "\n ");
 		for (int i = 0; i<filesize; ++i) {
+			if (col == scrX - 2) {
+				wprintw(editor, "\n ");
+			}
 			if (!(file[i] == 10)) {
 				++ col;
 				if (ln >= scrollY) {
@@ -167,10 +178,20 @@ int main(int argc, char* argv[]) {
 		wattron(titlebar, COLOR_PAIR(2));
 		wprintw(titlebar, "%s", asctime(timeinfo));
 		wattroff(titlebar, COLOR_PAIR(2));
+		// character
+		wmove(titlebar, 0, characterX);
+		wattron(titlebar, COLOR_PAIR(8));
+		if (characterX % 2 != 0) {
+			wprintw(titlebar, "o");
+		}
+		else {
+			wprintw(titlebar, "O");
+		}
+		wattroff(titlebar, COLOR_PAIR(8));
 		// move back
 		wmove(editor, ln + 1 - scrollY, col);
 		wprintw(editor, "");
-		refreshAll(windows, 2);
+		refreshAll(windows, 3);
 		// input
 		input = getch();
 		switch (input) {
