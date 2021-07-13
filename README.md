@@ -1,10 +1,11 @@
 ## YEDIT text editor
 A FOSS text editor (unfinished)
 <img src="https://server.mesyeti.uk/pictures/yedit.png"/>
-## Compile
+## Compile and run
 ```sh
 chmod +x make.sh
-./make.sh
+make build
+make run
 ```
 ## Known bugs
 strings and comments can glitch the editor
