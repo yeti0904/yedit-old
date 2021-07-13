@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
 	unsigned int scrollY = 0;     // scroll Y (offset in lines)
 	int col, ln;                  // printing x and y
 	int curp;                     // 1d cursor position
-	int curX, curyY;              // cursor position
+	int curX, curY;              // cursor position
 	int shortfilesize;            // shortened file size (measured in different things)
 	char sfsmeasure[3];           // shortened file size measure
 	char alert[64] = "";          // alert content
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
 						wattroff(editor, COLOR_PAIR(5));
 						wattroff(editor, COLOR_PAIR(7));
 					}
-					wprintw(editor, "%c", file[i]);
+					if (ln != scrY - 2) wprintw(editor, "%c", file[i]);
 				}
 			}
 			if (file[i] == 10) {
@@ -149,6 +149,7 @@ int main(int argc, char* argv[]) {
 					wprintw(editor, "\n ");
 				}
 			}
+			if ((col = curX) && (col == curY)) curp = i;
 		}
 		wattroff(editor, COLOR_PAIR(4));
 		// resize in case of terminal resize
@@ -194,6 +195,7 @@ int main(int argc, char* argv[]) {
 		refreshAll(windows, 3);
 		// input
 		input = getch();
+		if ((input == 10) || (input > 32 && input < 126)) ++ curp;
 		switch (input) {
 			case 10: {
 				file = (char*) realloc(file, filesize+1);

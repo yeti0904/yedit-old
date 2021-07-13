@@ -1,1 +1,0 @@
-gcc src/*.c -o bin/bin -lncurses -g
