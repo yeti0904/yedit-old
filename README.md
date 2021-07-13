@@ -3,7 +3,6 @@ A FOSS text editor (unfinished)
 <img src="https://server.mesyeti.uk/pictures/yedit.png"/>
 ## Compile and run
 ```sh
-chmod +x make.sh
 make build
 make run
 ```
