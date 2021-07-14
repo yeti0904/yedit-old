@@ -32,7 +32,7 @@ int getfilesize(char* filename) {
 
 void writefile(char* filename, char* toWrite) {
 	FILE *fr;
-	fr = fopen(filename, "w+");
+	fr = fopen(filename, "w");
 	fputs(toWrite, fr);
 	fclose(fr);
 }

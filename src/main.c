@@ -8,6 +8,7 @@
 #include "file.h"
 #define ctrl(x)    ((x) & 0x1f)
 // lenny from programmer's den made the macro above ^
+#define TABKEY 9
 
 void refreshAll(WINDOW * windows[], int windowc) {
 	refresh();
@@ -62,7 +63,7 @@ int main(int argc, char* argv[]) {
 	unsigned int scrollY = 0;     // scroll Y (offset in lines)
 	int col, ln;                  // printing x and y
 	int curp;                     // 1d cursor position
-	int curX, curY;              // cursor position
+	int curX, curY;               // cursor position
 	int shortfilesize;            // shortened file size (measured in different things)
 	char sfsmeasure[3];           // shortened file size measure
 	char alert[64] = "";          // alert content
@@ -74,15 +75,19 @@ int main(int argc, char* argv[]) {
 	char character;               // something like the mario from *that* editor
 	int characterX = 0;           // x position of the character
 	ui8 mode;                     // what will be viewed
+	bool syntaxHighlighting = 0;  // bool for syntax highlighting
+	ui8 backColour = COLOR_BLUE;  // variable that controls the background colour
+	ui8 foreColour = COLOR_WHITE; //
+	char in;
 	init_pair(1, COLOR_BLACK, COLOR_WHITE);
-	init_pair(2, COLOR_WHITE, COLOR_BLUE);
+	init_pair(2, foreColour, backColour);
 	init_pair(3, COLOR_BLACK, COLOR_GREEN);
 	// syntax highlighting
-	init_pair(4, COLOR_CYAN, COLOR_BLUE);    // integer / numbers
-	init_pair(5, COLOR_GREEN, COLOR_BLUE);   // string
-	init_pair(6, COLOR_MAGENTA, COLOR_BLUE); // directive (C)
-	init_pair(7, COLOR_YELLOW, COLOR_BLUE);  // comment
-	init_pair(8, COLOR_CYAN, COLOR_BLACK);   // character
+	init_pair(4, COLOR_CYAN, backColour);    // integer / numbers
+	init_pair(5, COLOR_GREEN, backColour);   // string
+	init_pair(6, COLOR_MAGENTA, backColour); // directive (C)
+	init_pair(7, COLOR_YELLOW, backColour);  // comment
+	init_pair(8, COLOR_CYAN, backColour);    // character
 	// windows
 	WINDOW* titlebar = newwin(1, scrX, 0, 0);
 	WINDOW* editor   = newwin(scrY - 1, scrX, 1, 0);
@@ -120,24 +125,26 @@ int main(int argc, char* argv[]) {
 			if (!(file[i] == 10)) {
 				++ col;
 				if (ln >= scrollY) {
-					if ((col == 0) && inComment) {
-						inComment = false;
-					}
-					if ((file[i] == '\"') && !inDirective) inString = !inString;
-					else if ((file[i] == '/') && (file[i+1] == '/') && !inDirective) inComment = !inComment;
-					if (inString || (file[i] == '"')) {
-						wattron(editor, COLOR_PAIR(5));
-					}
-					else if ((file[i] >= '0') && (file[i] <= '9')) {
-						wattron(editor, COLOR_PAIR(4));
-					}
-					else if (inComment) {
-						wattron(editor, COLOR_PAIR(7));
-					}
-					else {
-						wattroff(editor, COLOR_PAIR(4));
-						wattroff(editor, COLOR_PAIR(5));
-						wattroff(editor, COLOR_PAIR(7));
+					if (syntaxHighlighting) {
+						if ((col == 0) && inComment) {
+							inComment = false;
+						}
+						if ((file[i] == '\"') && !inDirective) inString = !inString;
+						else if ((file[i] == '/') && (file[i+1] == '/') && !inDirective) inComment = !inComment;
+						if (inString || (file[i] == '"')) {
+							wattron(editor, COLOR_PAIR(5));
+						}
+						else if ((file[i] >= '0') && (file[i] <= '9')) {
+							wattron(editor, COLOR_PAIR(4));
+						}
+						else if (inComment) {
+							wattron(editor, COLOR_PAIR(7));
+						}
+						else {
+							wattroff(editor, COLOR_PAIR(4));
+							wattroff(editor, COLOR_PAIR(5));
+							wattroff(editor, COLOR_PAIR(7));
+						}
 					}
 					if (ln != scrY - 2) wprintw(editor, "%c", file[i]);
 				}
@@ -149,7 +156,7 @@ int main(int argc, char* argv[]) {
 					wprintw(editor, "\n ");
 				}
 			}
-			if ((col = curX) && (col == curY)) curp = i;
+			if ((col == curX) && (col == curY)) curp = i;
 		}
 		wattroff(editor, COLOR_PAIR(4));
 		// resize in case of terminal resize
@@ -182,14 +189,10 @@ int main(int argc, char* argv[]) {
 		// character
 		wmove(titlebar, 0, characterX);
 		wattron(titlebar, COLOR_PAIR(8));
-		if (characterX % 2 != 0) {
-			wprintw(titlebar, "o");
-		}
-		else {
-			wprintw(titlebar, "O");
-		}
+		wprintw(titlebar, characterX %2 !=0? "o" : "O");
 		wattroff(titlebar, COLOR_PAIR(8));
 		// move back
+		curs_set(ln + 1 - scrollY < scrY - 3? 1 : 0);
 		wmove(editor, ln + 1 - scrollY, col);
 		wprintw(editor, "");
 		refreshAll(windows, 3);
@@ -222,7 +225,7 @@ int main(int argc, char* argv[]) {
 				}
 				break;
 			}
-			case KEY_STAB: {
+			case TABKEY: {
 				file = (char*) realloc(file, filesize+4);
 				filesize += 4;
 				for (int i = 1; i<4; ++i) {
@@ -251,16 +254,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	// end program
-	if (!((exittype == 0) && (strcmp(file, readfile(filename)) == 0))) {
-		char saveq; // save query
-		printf("You have unsaved changes, save? (Y/N) ");
-		scanf("%c", saveq);
-		if ((saveq == 'Y') || (saveq == 'y')) {
-			printf("\nOk, saving..\n");
-			writefile(filename, file);
-			printf("Done\n");
-		}
-	}
 	free(file);
 	endwin();
 	return 0;
